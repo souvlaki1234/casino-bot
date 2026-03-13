@@ -57,7 +57,7 @@
       display: flex;
       align-items: center;
       gap: 15px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
     .bet-btn {
       width: 36px; height: 36px;
@@ -70,6 +70,20 @@
       font-weight: bold;
     }
     #bet-amount { font-size: 1.1rem; min-width: 80px; text-align: center; }
+    .allin-btn {
+      background: linear-gradient(145deg, #ff4444, #cc0000);
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 50px;
+      cursor: pointer;
+      margin-bottom: 15px;
+      box-shadow: 0 5px 15px rgba(255,0,0,0.4);
+      transition: transform 0.1s;
+    }
+    .allin-btn:active { transform: scale(0.95); }
     .spin-btn {
       background: linear-gradient(145deg, #ffd700, #ff8c00);
       color: black;
@@ -116,6 +130,8 @@
       <button class="bet-btn" onclick="changeBet(10)">+</button>
     </div>
 
+    <button class="allin-btn" onclick="allIn()">💸 ALL IN</button><br>
+
     <button class="spin-btn" id="spinBtn" onclick="spinSlots()">🎰 КРУТИТЬ!</button>
     <div class="result" id="result"></div>
 
@@ -124,6 +140,10 @@
       Три одинаковых = x20 | Два одинаковых = x5
     </div>
   </div>
+
+  <audio id="soundWin" src="pole_letter_correct.mp3"></audio>
+  <audio id="soundLose" src="pole_letter_wrong.mp3"></audio>
+  <audio id="soundSpin" src="pole-chudes-baraban.mp3"></audio>
 
   <script>
     const tg = window.Telegram.WebApp;
@@ -134,6 +154,15 @@
     let bet = 10;
     let spinning = false;
 
+    const soundWin = document.getElementById('soundWin');
+    const soundLose = document.getElementById('soundLose');
+    const soundSpin = document.getElementById('soundSpin');
+
+    function playSound(sound) {
+      sound.currentTime = 0;
+      sound.play().catch(() => {});
+    }
+
     function updateBalance() {
       document.getElementById('balance').textContent = balance;
       localStorage.setItem('balance', balance);
@@ -141,6 +170,12 @@
 
     function changeBet(amount) {
       bet = Math.max(10, Math.min(balance, bet + amount));
+      document.getElementById('bet-amount').textContent = 'Ставка: ' + bet;
+    }
+
+    function allIn() {
+      if (spinning) return;
+      bet = balance;
       document.getElementById('bet-amount').textContent = 'Ставка: ' + bet;
     }
 
@@ -159,6 +194,8 @@
       document.getElementById('spinBtn').disabled = true;
       document.getElementById('result').textContent = '';
 
+      playSound(soundSpin);
+
       const slots = ['s1','s2','s3'];
       slots.forEach(id => document.getElementById(id).classList.add('spinning'));
 
@@ -168,6 +205,8 @@
         ticks++;
         if (ticks > 15) {
           clearInterval(interval);
+          soundSpin.pause();
+          soundSpin.currentTime = 0;
           slots.forEach(id => document.getElementById(id).classList.remove('spinning'));
 
           const result = [randomEmoji(), randomEmoji(), randomEmoji()];
@@ -186,7 +225,14 @@
             msg = '😔 Не повезло...';
           }
 
-          if (win > 0) { balance += win; updateBalance(); }
+          if (win > 0) {
+            balance += win;
+            updateBalance();
+            playSound(soundWin);
+          } else {
+            playSound(soundLose);
+          }
+
           if (balance <= 0) { balance = 100; msg += ' (бонус 100 монет!)'; updateBalance(); }
           document.getElementById('result').textContent = msg;
           document.getElementById('spinBtn').disabled = false;
