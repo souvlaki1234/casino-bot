@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎰 Казино</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      color: white;
+    }
+    h1 { font-size: 2rem; margin-bottom: 10px; text-shadow: 0 0 20px gold; }
+    .balance {
+      font-size: 1.2rem;
+      background: rgba(255,255,255,0.1);
+      padding: 8px 24px;
+      border-radius: 20px;
+      margin-bottom: 30px;
+    }
+    .machine {
+      background: linear-gradient(145deg, #2d2d2d, #1a1a1a);
+      border: 3px solid gold;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 0 40px rgba(255,215,0,0.3);
+      text-align: center;
+    }
+    .slots {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .slot {
+      width: 80px;
+      height: 80px;
+      background: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+      transition: transform 0.1s;
+    }
+    .slot.spinning { animation: spin 0.1s infinite; }
+    @keyframes spin { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.1); } }
+    .bet-control {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .bet-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: gold;
+      color: black;
+      font-size: 1.2rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #bet-amount { font-size: 1.1rem; min-width: 80px; text-align: center; }
+    .spin-btn {
+      background: linear-gradient(145deg, #ffd700, #ff8c00);
+      color: black;
+      border: none;
+      padding: 15px 50px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(255,140,0,0.5);
+      transition: transform 0.1s;
+    }
+    .spin-btn:active { transform: scale(0.95); }
+    .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result {
+      margin-top: 20px;
+      font-size: 1.1rem;
+      min-height: 30px;
+      color: gold;
+      font-weight: bold;
+    }
+    .paytable {
+      margin-top: 25px;
+      font-size: 0.8rem;
+      opacity: 0.7;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎰 Казино</h1>
+  <div class="balance">💰 Баланс: <span id="balance">1000</span> монет</div>
+
+  <div class="machine">
+    <div class="slots">
+      <div class="slot" id="s1">🍒</div>
+      <div class="slot" id="s2">🍋</div>
+      <div class="slot" id="s3">🍊</div>
+    </div>
+
+    <div class="bet-control">
+      <button class="bet-btn" onclick="changeBet(-10)">−</button>
+      <span id="bet-amount">Ставка: 10</span>
+      <button class="bet-btn" onclick="changeBet(10)">+</button>
+    </div>
+
+    <button class="spin-btn" id="spinBtn" onclick="spinSlots()">🎰 КРУТИТЬ!</button>
+    <div class="result" id="result"></div>
+
+    <div class="paytable">
+      💎💎💎 Джекпот = x100 | ⭐⭐⭐ = x50<br>
+      Три одинаковых = x20 | Два одинаковых = x5
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    const emojis = ['🍒','🍋','🍊','🍇','⭐','💎'];
+    let balance = parseInt(localStorage.getItem('balance') || '1000');
+    let bet = 10;
+    let spinning = false;
+
+    function updateBalance() {
+      document.getElementById('balance').textContent = balance;
+      localStorage.setItem('balance', balance);
+    }
+
+    function changeBet(amount) {
+      bet = Math.max(10, Math.min(balance, bet + amount));
+      document.getElementById('bet-amount').textContent = 'Ставка: ' + bet;
+    }
+
+    function randomEmoji() {
+      return emojis[Math.floor(Math.random() * emojis.length)];
+    }
+
+    function spinSlots() {
+      if (spinning || balance < bet) {
+        if (balance < bet) document.getElementById('result').textContent = '❌ Недостаточно монет!';
+        return;
+      }
+      spinning = true;
+      balance -= bet;
+      updateBalance();
+      document.getElementById('spinBtn').disabled = true;
+      document.getElementById('result').textContent = '';
+
+      const slots = ['s1','s2','s3'];
+      slots.forEach(id => document.getElementById(id).classList.add('spinning'));
+
+      let ticks = 0;
+      const interval = setInterval(() => {
+        slots.forEach(id => document.getElementById(id).textContent = randomEmoji());
+        ticks++;
+        if (ticks > 15) {
+          clearInterval(interval);
+          slots.forEach(id => document.getElementById(id).classList.remove('spinning'));
+
+          const result = [randomEmoji(), randomEmoji(), randomEmoji()];
+          slots.forEach((id, i) => document.getElementById(id).textContent = result[i]);
+
+          let win = 0;
+          let msg = '';
+          const [a, b, c] = result;
+          if (a === b && b === c) {
+            if (a === '💎') { win = bet * 100; msg = '🏆 ДЖЕКПОТ! x100!'; }
+            else if (a === '⭐') { win = bet * 50; msg = '🌟 СУПЕР! x50!'; }
+            else { win = bet * 20; msg = '🎉 ПОБЕДА! x20!'; }
+          } else if (a === b || b === c || a === c) {
+            win = bet * 5; msg = '👍 Два одинаковых! x5!';
+          } else {
+            msg = '😔 Не повезло...';
+          }
+
+          if (win > 0) { balance += win; updateBalance(); }
+          if (balance <= 0) { balance = 100; msg += ' (бонус 100 монет!)'; updateBalance(); }
+          document.getElementById('result').textContent = msg;
+          document.getElementById('spinBtn').disabled = false;
+          spinning = false;
+        }
+      }, 80);
+    }
+
+    updateBalance();
+  </script>
+</body>
+</html>
