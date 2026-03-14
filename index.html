@@ -227,7 +227,7 @@
     function playSound(sound) { sound.currentTime = 0; sound.play().catch(() => {}); }
 
     function updateBalance() {
-      document.getElementById('balance').textContent = balance;
+      document.getElementById('balance').textContent = balance.toLocaleString('de-DE');
       localStorage.setItem('balance', balance);
     }
 
