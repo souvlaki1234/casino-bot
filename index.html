@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎰 Казино</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      color: white;
+      padding: 20px;
+    }
+    .banner { width: 100%; max-width: 250px; border-radius: 12px; margin-bottom: 15px; }
+    .gif-title { width: 300px; margin-bottom: 10px; }
+    .balance {
+      font-size: 1.2rem;
+      background: rgba(255,255,255,0.1);
+      padding: 8px 24px;
+      border-radius: 20px;
+      margin-bottom: 30px;
+    }
+    .machine {
+      background: linear-gradient(145deg, #2d2d2d, #1a1a1a);
+      border: 3px solid gold;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 0 40px rgba(255,215,0,0.3);
+      text-align: center;
+      width: 100%;
+      max-width: 350px;
+    }
+    .slots {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .slot {
+      width: 80px;
+      height: 80px;
+      background: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+    }
+    .slot.spinning { animation: spin 0.1s infinite; }
+    @keyframes spin { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.1); } }
+    .bet-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      justify-content: center;
+    }
+    .bet-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: gold;
+      color: black;
+      font-size: 1.2rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .bet-input {
+      width: 90px;
+      text-align: center;
+      font-size: 1rem;
+      padding: 6px;
+      border-radius: 10px;
+      border: 2px solid gold;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      outline: none;
+    }
+    .bet-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .buttons-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+    .allin-btn {
+      background: linear-gradient(145deg, #ff4444, #cc0000);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(255,0,0,0.4);
+    }
+    .fast-btn {
+      background: linear-gradient(145deg, #444, #222);
+      color: white;
+      border: 2px solid #888;
+      padding: 8px 16px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      border-radius: 50px;
+      cursor: pointer;
+    }
+    .fast-btn.active {
+      background: linear-gradient(145deg, #00aa44, #007733);
+      border-color: #00ff66;
+    }
+    .spin-btn {
+      background: linear-gradient(145deg, #ffd700, #ff8c00);
+      color: black;
+      border: none;
+      padding: 15px 50px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(255,140,0,0.5);
+      transition: transform 0.1s;
+      width: 100%;
+    }
+    .spin-btn:active { transform: scale(0.95); }
+    .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result {
+      margin-top: 20px;
+      font-size: 1.1rem;
+      min-height: 30px;
+      color: gold;
+      font-weight: bold;
+    }
+    .paytable {
+      margin-top: 20px;
+      font-size: 0.8rem;
+      opacity: 0.7;
+      line-height: 1.8;
+    }
+    #broke-screen {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <img src="image1.png" class="banner">
+  <img src="casino.gif" class="gif-title">
+  <div class="balance">💰 Баланс: <span id="balance">1000</span> монет</div>
+
+  <div class="machine">
+    <div class="slots">
+      <div class="slot" id="s1">🍒</div>
+      <div class="slot" id="s2">🍋</div>
+      <div class="slot" id="s3">🍊</div>
+    </div>
+
+    <div class="bet-control">
+      <button class="bet-btn" onclick="changeBet(-10)">−</button>
+      <input class="bet-input" type="number" id="bet-input" value="10" min="1" onchange="betFromInput()">
+      <button class="bet-btn" onclick="changeBet(10)">+</button>
+    </div>
+
+    <div class="buttons-row">
+      <button class="allin-btn" onclick="allIn()">💸 ALL IN</button>
+      <button class="fast-btn" id="fastBtn" onclick="toggleFast()">⚡ Быстро: ВЫКЛ</button>
+    </div>
+
+    <button class="spin-btn" id="spinBtn" onclick="spinSlots()">🎰 КРУТИТЬ!</button>
+    <div class="result" id="result"></div>
+
+    <div class="paytable">
+      💎💎💎 Джекпот = x100 | ⭐⭐⭐ = x50<br>
+      Три одинаковых = x20 | Два одинаковых = x5
+    </div>
+  </div>
+
+  <img src="image2.png" class="banner" style="margin-top:15px;">
+
+  <div id="broke-screen">
+    <div class="tenor-gif-embed" data-postid="6134957717459178414" data-share-method="host" data-aspect-ratio="1" data-width="80%">
+      <a href="https://tenor.com/view/jester-dance-jester-front-dance-gif-6134957717459178414">Jester Dance</a>
+    </div>
+    <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
+    <p style="color:white;font-size:2rem;font-weight:bold;margin-top:20px;">ты броук 😢</p>
+    <button onclick="hideBroke()" style="margin-top:20px;padding:12px 30px;font-size:1rem;font-weight:bold;border-radius:50px;border:none;background:gold;color:black;cursor:pointer;">🔄 Начать заново (1000 монет)</button>
+  </div>
+
+  <audio id="soundWin" src="pole_letter_correct.mp3"></audio>
+  <audio id="soundLose" src="pole_letter_wrong.mp3"></audio>
+  <audio id="soundSpin" src="pole-chudes-baraban.mp3"></audio>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    const emojis = ['🍒','🍋','🍊','🍇','⭐','💎'];
+    let balance = parseInt(localStorage.getItem('balance') || '1000');
+    let bet = 10;
+    let spinning = false;
+    let fastMode = false;
+
+    const soundWin = document.getElementById('soundWin');
+    const soundLose = document.getElementById('soundLose');
+    const soundSpin = document.getElementById('soundSpin');
+    soundWin.volume = 0.1;
+    soundLose.volume = 0.1;
+    soundSpin.volume = 0.1;
+
+    function playSound(sound) { sound.currentTime = 0; sound.play().catch(() => {}); }
+
+    function updateBalance() {
+      document.getElementById('balance').textContent = balance;
+      localStorage.setItem('balance', balance);
+    }
+
+    function changeBet(amount) {
+      bet = Math.max(1, Math.min(balance, bet + amount));
+      document.getElementById('bet-input').value = bet;
+    }
+
+    function betFromInput() {
+      const val = parseInt(document.getElementById('bet-input').value);
+      if (!isNaN(val) && val >= 1) {
+        bet = Math.min(balance, val);
+        document.getElementById('bet-input').value = bet;
+      }
+    }
+
+    function allIn() {
+      if (spinning) return;
+      bet = balance;
+      document.getElementById('bet-input').value = bet;
+    }
+
+    function toggleFast() {
+      fastMode = !fastMode;
+      const btn = document.getElementById('fastBtn');
+      btn.textContent = fastMode ? '⚡ Быстро: ВКЛ' : '⚡ Быстро: ВЫКЛ';
+      btn.classList.toggle('active', fastMode);
+    }
+
+    function randomEmoji() {
+      return emojis[Math.floor(Math.random() * emojis.length)];
+    }
+
+ function showResult(result) {
+      const slots = ['s1','s2','s3'];
+      slots.forEach((id, i) => document.getElementById(id).textContent = result[i]);
+
+      let win = 0;
+      let msg = '';
+      const [a, b, c] = result;
+      if (a === b && b === c) {
+        if (a === '💎') { win = bet * 100; msg = '🏆 ДЖЕКПОТ! x100!'; }
+        else if (a === '⭐') { win = bet * 50; msg = '🌟 СУПЕР! x50!'; }
+        else { win = bet * 20; msg = '🎉 ПОБЕДА! x20!'; }
+      } else if (a === b || b === c) {
+        win = bet * 5; msg = '👍 Два одинаковых! x5!';
+      } else {
+        msg = '😔 Не повезло...';
+      }
+
+      if (win > 0) { balance += win; updateBalance(); playSound(soundWin); }
+      else { playSound(soundLose); }
+
+      document.getElementById('result').textContent = msg;
+      document.getElementById('spinBtn').disabled = false;
+      spinning = false;
+
+      if (balance < 0) {
+        const debt = Math.abs(balance);
+        setTimeout(() => {
+          tg.sendData(JSON.stringify({ type: 'debt', amount: debt }));
+        }, 1000);
+      }
+    }
+
+      document.getElementById('result').textContent = msg;
+      document.getElementById('spinBtn').disabled = false;
+      spinning = false;
+
+      if (balance <= 0) {
+        setTimeout(() => showBroke(), 300);
+      }
+    }
+
+    function showBroke() {
+      document.getElementById('broke-screen').style.display = 'flex';
+    }
+
+    function hideBroke() {
+      balance = 1000;
+      localStorage.setItem('balance', balance);
+      updateBalance();
+      document.getElementById('broke-screen').style.display = 'none';
+    }
+
+    function spinSlots() {
+      if (spinning || balance < bet) {
+        if (balance < bet) document.getElementById('result').textContent = '❌ Недостаточно монет!';
+        return;
+      }
+      spinning = true;
+      balance -= bet;
+      updateBalance();
+      document.getElementById('spinBtn').disabled = true;
+      document.getElementById('result').textContent = '';
+
+      const finalResult = [randomEmoji(), randomEmoji(), randomEmoji()];
+      const slots = ['s1','s2','s3'];
+
+      if (fastMode) {
+        showResult(finalResult);
+        return;
+      }
+
+      playSound(soundSpin);
+      slots.forEach(id => document.getElementById(id).classList.add('spinning'));
+
+      let ticks = 0;
+      const interval = setInterval(() => {
+        slots.forEach(id => document.getElementById(id).textContent = randomEmoji());
+        ticks++;
+        if (ticks > 15) {
+          clearInterval(interval);
+          soundSpin.pause();
+          soundSpin.currentTime = 0;
+          slots.forEach(id => document.getElementById(id).classList.remove('spinning'));
+          showResult(finalResult);
+        }
+      }, 80);
+    }
+
+    updateBalance();
+  </script>
+</body>
+</html>
