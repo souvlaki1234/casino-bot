@@ -186,9 +186,7 @@
     }
     .rocket-result { margin-top: 12px; font-size: 1rem; min-height: 25px; font-weight: bold; color: #00ff88; }
     .rocket-history { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
-    .history-chip {
-      padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold;
-    }
+    .history-chip { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
     .history-chip.win { background: rgba(0,200,68,0.2); color: #00ff88; border: 1px solid rgba(0,200,68,0.3); }
     .history-chip.lose { background: rgba(255,68,68,0.2); color: #ff6666; border: 1px solid rgba(255,68,68,0.3); }
 
@@ -213,6 +211,7 @@
   <!-- ГЛАВНЫЙ ЭКРАН -->
   <div id="screen-home">
     <div class="welcome-text">Добро пожаловать в</div>
+    <div class="welcome-sub">★ &nbsp; КАЗИНО &nbsp; ★</div>
     <img src="casino1.gif" class="home-gif">
     <div class="balance-home" id="balance-home">💰 <span id="balance-home-val">1000</span> монет</div>
     <div class="games-grid">
@@ -235,6 +234,13 @@
         <div class="info">
           <span class="name">В разработке</span>
           <span class="desc">Скоро...</span>
+        </div>
+      </button>
+      <button class="game-btn" id="noAdBtn" onclick="buyNoAds()">
+        <span class="icon">🚫</span>
+        <div class="info">
+          <span class="name" id="noAdBtnText">Отключить рекламу</span>
+          <span class="desc">1.000.000 монет — навсегда</span>
         </div>
       </button>
     </div>
@@ -405,9 +411,39 @@
     // ===== БАННЕРЫ =====
     const banners = ['image1.png', 'image2.png'];
     let bannerIndex = 0;
+    let noAds = localStorage.getItem('noAds') === 'true';
+
+    function updateNoAdsBtn() {
+      const btn = document.getElementById('noAdBtn');
+      const text = document.getElementById('noAdBtnText');
+      if (noAds) {
+        text.textContent = '✅ Реклама отключена';
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'default';
+      }
+    }
+
+    function buyNoAds() {
+      if (noAds) return;
+      if (balance < 1000000) {
+        alert('❌ Недостаточно монет! Нужно 1.000.000 монет.');
+        return;
+      }
+      balance -= 1000000;
+      localStorage.setItem('balance', balance);
+      noAds = true;
+      localStorage.setItem('noAds', 'true');
+      updateBalance();
+      updateNoAdsBtn();
+      closeBanner();
+      alert('✅ Реклама отключена навсегда!');
+    }
 
     function showBanner() {
-      if (document.getElementById('screen-slots').style.display !== 'flex') return;
+      if (noAds) return;
+      const slotsVisible = document.getElementById('screen-slots').style.display === 'flex';
+      const rocketVisible = document.getElementById('screen-rocket').style.display === 'flex';
+      if (!slotsVisible && !rocketVisible) return;
       const popup = document.getElementById('banner-popup');
       const img = document.getElementById('banner-img');
       img.src = banners[bannerIndex % banners.length];
@@ -676,6 +712,7 @@
     }
 
     updateBalance();
+    updateNoAdsBtn();
     showScreen('home');
   </script>
 </body>
