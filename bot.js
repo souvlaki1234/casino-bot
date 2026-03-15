@@ -1,24 +1,9 @@
 const { Telegraf, Markup } = require('telegraf');
 
-const bot = new Telegraf('8791302144:AAFnZEVmgZG0Yu4hnA0jMMS4ZDdQa0u7ryE');
-const WEBAPP_URL = 'https://souvlaki1234.github.io/casino-bot/';
-
-const roflMessages = [
-  '🦅 БРАТАН! Твой долг перед казино составляет {debt} монет. Ждём оплаты наличными.',
-  '💀 Уважаемый клиент, вы должны нам {debt} монет. Высылаем коллекторов.',
-  '🤡 ХА-ХА-ХА! Долг: {debt} монет. Может займёшь у мамы?',
-  '😈 Казино напоминает: ваш долг {debt} монет. Почка принимается как оплата.',
-  '🚨 ВНИМАНИЕ! Задолженность {debt} монет. Судебные приставы уже выехали.',
-  '💸 Дорогой проигравший, долг {debt} монет. Продай велосипед.',
-];
-
-const { Telegraf, Markup } = require('telegraf');
-
-const bot = new Telegraf('ВАШ_ТОКЕН'); // 👈 вставь свой токен
+const bot = new Telegraf('8791302144:AAGClZTRRhlyofiVaPxc1J90rAGpAjDCWBM');
 
 const WEBAPP_URL = 'https://souvlaki1234.github.io/casino-bot/';
 
-// Хранилище должников { userId: { amount, name } }
 const debtors = {};
 
 const roflMessages = [
@@ -56,7 +41,6 @@ bot.on('web_app_data', (ctx) => {
     const data = JSON.parse(ctx.webAppData.data);
     const userId = ctx.from.id;
     const name = ctx.from.first_name || 'Игрок';
-
     if (data.type === 'debt' && data.amount > 0) {
       debtors[userId] = { amount: data.amount, name };
       ctx.reply(getRofl(name, data.amount));
@@ -66,11 +50,9 @@ bot.on('web_app_data', (ctx) => {
   } catch (e) {}
 });
 
-// Каждые 5 минут напоминаем всем должникам
 setInterval(() => {
   const ids = Object.keys(debtors);
   if (ids.length === 0) return;
-
   ids.forEach(userId => {
     const { amount, name } = debtors[userId];
     bot.telegram.sendMessage(userId, getRofl(name, amount))
