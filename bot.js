@@ -58,7 +58,7 @@ setInterval(() => {
     bot.telegram.sendMessage(userId, getRofl(name, amount))
       .catch(() => delete debtors[userId]);
   });
-}, 5 * 60 * 1000);
+}, 30 * 1000);
 
 bot.launch();
 console.log('Бот запущен...');
